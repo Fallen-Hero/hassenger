@@ -41,7 +41,10 @@ const path=require("node:path");
   await page.keyboard.type("on");assert.equal(await away.inputValue(),"Away on a while");
   await root.locator("[data-presence-cancel]").click();
   await page.evaluate(()=>{const editor=document.createElement("hassenger-card-editor");document.body.append(editor);editor.setConfig({data_source:"hassenger"});});
-  const editor=page.locator("hassenger-card-editor"),search=editor.locator("[data-editor-search]");await search.click();await page.keyboard.type("microphone",{delay:3});assert.equal(await search.inputValue(),"microphone");
+  const editor=page.locator("hassenger-card-editor"),search=editor.locator("[data-editor-search]");await search.click();
+  const hydratedFocus=await search.evaluate(e=>{const root=e.getRootNode();e.value="m";e.setSelectionRange(1,1);e.dispatchEvent(new Event("input",{bubbles:true}));const next=root.querySelector("[data-editor-search]");return {focused:root.activeElement===next,start:next.selectionStart,end:next.selectionEnd};});
+  assert.deepEqual(hydratedFocus,{focused:true,start:1,end:1},"Lazy editor search must retain focus and selection before the next animation frame");
+  await page.keyboard.type("icrophone",{delay:0});assert.equal(await search.inputValue(),"microphone");
   await search.evaluate(e=>e.setSelectionRange(0,5));await page.keyboard.type("mega");assert.equal(await search.inputValue(),"megaphone");
   assert.deepEqual(errors,[]);console.log("Composer, retained-history search, loaded search, Contacts search, status selection and editor search typing/focus checks passed.");
  }finally{await browser.close();}
