@@ -21,6 +21,8 @@ from .media_upload import HassengerMediaUploadView
 from .store import HassengerStore
 from .websocket import async_register as async_register_websocket
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 
 CREATE_SCHEMA = vol.Schema({vol.Required("title"): vol.All(cv.string, vol.Length(min=1, max=MAX_THREAD_TITLE_LENGTH)), vol.Required("participants"): vol.All([vol.All(cv.string, vol.Length(min=1, max=MAX_THREAD_ID_LENGTH))], vol.Length(min=1, max=MAX_PARTICIPANTS)), vol.Optional("thread_id"): vol.All(cv.string, vol.Length(min=1, max=MAX_THREAD_ID_LENGTH)), vol.Optional("icon", default="mdi:message"): cv.icon, vol.Optional("image", default=""): vol.All(cv.string, vol.Length(max=MAX_ATTACHMENT_REFERENCE_LENGTH)), vol.Optional("color", default=""): vol.All(cv.string, vol.Length(max=32))})
 SEND_SCHEMA = vol.Schema({vol.Required("thread_id"): vol.All(cv.string, vol.Length(min=1, max=MAX_THREAD_ID_LENGTH)), vol.Optional("message", default=""): vol.All(cv.string, vol.Length(max=MAX_MESSAGE_LENGTH)), vol.Optional("attachment_url", default=""): vol.All(cv.string, vol.Length(max=MAX_ATTACHMENT_REFERENCE_LENGTH)), vol.Optional("attachment_content_type", default="image/*"): vol.All(cv.string, vol.Length(max=100)), vol.Optional("attachment_name", default="Shared image"): vol.All(cv.string, vol.Length(max=MAX_ATTACHMENT_NAME_LENGTH)), vol.Optional("sender_name", default="Home Assistant"): vol.All(cv.string, vol.Length(max=MAX_SENDER_NAME_LENGTH)), vol.Optional("message_type", default="system"): vol.In(["text", "system", "success", "warning", "error"]), vol.Optional("notify", default=True): cv.boolean})
@@ -30,7 +32,7 @@ SPEAK_MESSAGE_SCHEMA = vol.Schema({vol.Required("tts_engine"): cv.entity_id, vol
 
 
 async def _async_initialize(hass: HomeAssistant) -> bool:
-    """Initialize Hassenger exactly once for YAML or config-entry setup."""
+    """Initialize Hassenger exactly once for config-entry setup."""
     if DATA_STORE in hass.data.get(DOMAIN, {}):
         return True
     store = HassengerStore(hass)
