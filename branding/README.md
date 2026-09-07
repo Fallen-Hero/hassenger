@@ -14,8 +14,9 @@ The two supplied wordmark PNGs contain the visible checkerboard in their origina
 
 - `hassenger-full-logo-transparent.png`: approved full logo for dark backgrounds, 2048 × 512 with genuine transparency; white “Hass” and cyan “enger”.
 - `hassenger-full-logo-light.png`: the same composition for light backgrounds, with dark “Hass” for legibility.
+- `hassenger-full-logo-banner.png`: the approved white/cyan full logo on a solid dark backdrop, 2048 × 512. This is the HACS-compatible README presentation.
 
-These combine the unchanged transparent original house-and-bubbles image with the full Hassenger lettering. The original rounded bubbles and centered dots are not redrawn. The README selects the appropriate version for the reader's color scheme. Neither presentation asset contains a checkerboard background.
+These combine the unchanged transparent original house-and-bubbles image with the full Hassenger lettering. The original rounded bubbles and centered dots are not redrawn. The README uses a standard Markdown image with an absolute URL instead of theme-switching HTML, which HACS does not reliably render. Its solid backdrop keeps the lettering readable in light and dark views. None of these presentation assets contains a checkerboard background.
 
 ## Home Assistant and HACS
 
