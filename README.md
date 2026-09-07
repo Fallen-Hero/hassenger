@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="branding/hassenger-original-wordmark-banner.png" alt="Hassenger full logo with house, chat bubbles, and name" width="640">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="branding/hassenger-full-logo-transparent.png">
+    <img src="branding/hassenger-full-logo-light.png" alt="Hassenger full logo with house, chat bubbles, and name" width="640">
+  </picture>
 </p>
 
 # Hassenger
