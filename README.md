@@ -50,6 +50,8 @@ Screenshot icons use Material Design Icons ([Apache 2.0 license](docs/screenshot
 
 ## Install
 
+Requires **Home Assistant Core 2026.9.1 or newer**. The first release was tested by the maintainer on Core **2026.9.1**; older versions are not verified.
+
 ### HACS
 
 1. Add [Fallen-Hero/hassenger](https://github.com/Fallen-Hero/hassenger) as a HACS custom repository with category **Integration**.
