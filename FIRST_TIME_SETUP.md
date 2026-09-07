@@ -1,6 +1,6 @@
 # Hassenger first-time setup
 
-Install Hassenger 1.0.0 using this guide. New cards default to a preserved 400 px conversation area.
+Install Hassenger 1.0.0 on Home Assistant Core 2026.9.1 or newer using this guide. New cards default to a preserved 400 px conversation area.
 
 See [FEATURE_GUIDE.md](FEATURE_GUIDE.md) for optional controls and customization.
 
@@ -55,7 +55,7 @@ The **Full Hassenger logo** appears by default and the separate title starts bla
 
 Use a Home Assistant administrator account.
 
-1. Press the new-conversation icon in the Hassenger header.
+1. Open Contacts and press its new-conversation icon.
 2. Enter a name such as `Person #1 & Person #2`.
 3. Tap the checkbox row for every Home Assistant user who may see it.
 4. Choose a conversation icon and accent color.
