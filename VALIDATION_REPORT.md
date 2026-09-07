@@ -1,5 +1,7 @@
 # Hassenger 1.0.0 release validation
 
+Documentation correction authorized by the owner on 2026-09-07: the README now uses a standard Markdown image with an absolute URL and a solid dark logo backdrop because HACS renders the theme-switching picture/source markup as text. This adds one README presentation image (87 files). HACS reads documentation from the selected release tag, so the correction replaces the v1.0.0 tag and ZIP after rerunning all automated gates. Integration, card, and blueprint code must remain byte-identical to original release commit `f542cb3f346fab205d9718429e610dd7c960a1ca`; the workflow rejects all changes outside an explicit documentation/test/workflow allowlist. The original 86-file ZIP checksum was `e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9`; its files are retained as a workflow backup. Download the new ZIP with its matching checksum.
+
 Deliverables: Hassenger Card 1.0.0, integration 1.0.0, mobile reply blueprint, and optional legacy `input_text` blueprint. Home Assistant Core 2026.9.1 is the maintainer-tested version and declared minimum. On 2026-09-07 the maintainer confirmed the latest package works after restart, including two-account messaging, uploads, and mobile use. This is owner-reported live testing, separate from automated tests; it is not certification of every device or accessibility combination.
 
 ## 1.0.0 release-review validation — current results

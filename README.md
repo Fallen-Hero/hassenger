@@ -1,9 +1,4 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="branding/hassenger-full-logo-transparent.png">
-    <img src="branding/hassenger-full-logo-light.png" alt="Hassenger full logo with house, chat bubbles, and name" width="640">
-  </picture>
-</p>
+![Hassenger full logo with house, chat bubbles, and name](https://raw.githubusercontent.com/Fallen-Hero/hassenger/main/branding/hassenger-full-logo-banner.png)
 
 # Hassenger
 
