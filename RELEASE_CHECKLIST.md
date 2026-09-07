@@ -1,30 +1,35 @@
 # Release checklist
 
-The code is a release candidate, not ready to publish until every unchecked owner/external item below is complete.
+First public release: v1.0.0. Checked items are backed by recorded evidence; unchecked items remain explicit follow-up work, not claims of successful testing. Publication requires the automated release workflow to pass and the maintainer's live smoke-test confirmation.
+
+## Confirmed live smoke testing
+
+- [x] On 2026-09-07, the maintainer confirmed the latest verified package works on Home Assistant Core 2026.9.1 after restart, with messaging between two accounts, media uploads, and mobile use.
+- [x] Set the supported minimum to the tested version, Home Assistant Core 2026.9.1. Earlier versions are unverified.
 
 ## Required owner information
 
 - [x] Prepare package links for `Fallen-Hero/hassenger`; confirm/create the actual repository before publication.
 - [x] Set manifest documentation, issue-tracker, code-owner and private-security links to the selected owner.
 - [x] Prepare `v1.0.0` as the first public version with first-time setup and future-update guidance. No tag has been created by package preparation.
-- [ ] Add a repository description, enable Issues and private vulnerability reporting, and add topics such as `home-assistant`, `hacs`, `lovelace`, and `messaging`.
+- [x] Add a repository description, enable Issues and private vulnerability reporting, and add `home-assistant`, `hacs`, and `messaging` topics.
 - [x] Include Home Assistant/HACS icons generated from the exact original mark and verify their dimensions, transparency, hashes, and release layout.
 
 ## Automated gates
 
 - [x] Rerun the blueprint schema suite with a readable PyYAML installation. Both included blueprints passed during the 1.0.0 pass.
 
-- [ ] GitHub HACS validation passes without ignored checks.
-- [ ] Hassfest passes.
-- [ ] All 22 focused browser suites, the Chromium/Firefox/WebKit smoke suite, and 7 Python backend/integration/upload/audio/blueprint/privacy/layout suites pass in GitHub Actions.
+- [x] GitHub HACS validation passes without ignored checks.
+- [x] Hassfest passes.
+- [x] All 22 focused browser suites, the Chromium/Firefox/WebKit smoke suite, and 7 Python backend/integration/upload/audio/blueprint/privacy/layout suites pass in GitHub Actions. See VALIDATION_REPORT.md; the release workflow reruns these against the exact selected commit.
 - [ ] The release archive contains only allowlisted files; no old ZIPs, unreviewed screenshots, caches, local vendor folders, or generated test output. The six sanitized documentation screenshots and their icon license are intentional.
 - [ ] SHA-256 checksum matches the published archive.
 - [ ] CI visual-snapshot artifact was reviewed at desktop and phone widths for Modern Chat, RGB Neon, Retro Contacts, and preset-matched contact profiles.
 - [ ] Keyboard focus order, visible focus, reduced motion, 200% zoom, VoiceOver, TalkBack, and one desktop screen reader pass the checks in `ACCESSIBILITY.md`.
 
-## Real-device gates
+## Extended real-device follow-up matrix
 
-- [ ] Validate the declared Home Assistant 2025.7.0 minimum or adjust hacs.json and the compatibility documentation to the oldest version actually supported and tested.
+- [x] Align hacs.json and compatibility documentation to the maintainer-tested Home Assistant Core 2026.9.1 minimum.
 - [ ] Verify restart and backup/restore preserve messages/media, reads, presence, mute/archive choices, favorites, shared pins, bookmarks and reminders.
 - [ ] Verify favorite/reminder privacy and shared-pin membership on two physical devices, including restart, expiry, snooze/repeats and last-used opt-out.
 - [ ] At default height and smaller explicit heights, scroll the conversation menu to its last administrative action; check resizing, page scrolling and keyboard access.
