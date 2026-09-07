@@ -1,4 +1,4 @@
-name: Publish Hassenger 1.0.0
+name: Correct Hassenger 1.0.0 README
 
 on:
   workflow_dispatch:
@@ -22,6 +22,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Verify documentation-only correction
+        run: |
+          original=f542cb3f346fab205d9718429e610dd7c960a1ca
+          test "$(git rev-parse 'v1.0.0^{commit}')" = "$original"
+          changed=$(git diff --name-only "$original" HEAD)
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Ev '^(README.md|VALIDATION_REPORT.md|branding/README.md|branding/hassenger-full-logo-banner.png|tests/test-release-layout.py|\.github/workflows/release.yml)$'; then
+            echo "Unexpected non-documentation change; refusing replacement."
+            exit 1
+          fi
       - name: Export exact source commit
         run: |
           mkdir -p "$RUNNER_TEMP/hassenger-release"
@@ -65,7 +76,23 @@ jobs:
       - name: Verify archive checksum
         working-directory: release-assets
         run: sha256sum --check Hassenger-v1.0.0.zip.sha256
-      - name: Create draft, verify uploaded files, and publish
+      - name: Preserve original release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = f542cb3f346fab205d9718429e610dd7c960a1ca
+          test "$(gh api repos/{owner}/{repo}/releases/tags/v1.0.0 --jq .immutable)" != true
+          gh release download v1.0.0 --dir original-release --pattern 'Hassenger-v1.0.0.zip*'
+          (cd original-release && sha256sum --check Hassenger-v1.0.0.zip.sha256)
+          test "$(sha256sum original-release/Hassenger-v1.0.0.zip | cut -d ' ' -f 1)" = e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-1.0.0-before-readme-correction
+          path: original-release/*
+          if-no-files-found: error
+          retention-days: 90
+      - name: Replace authorized documentation release and verify
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -73,6 +100,8 @@ jobs:
           RELEASE_NOTES: |
             ## Hassenger 1.0.0
             The first public release: messaging for your Home Assistant household.
+
+            **Documentation correction (2026-09-07):** the 1.0.0 tag and full ZIP were replaced with the owner's approval to fix the README logo in HACS. Integration, card, and blueprint code are unchanged. The full ZIP checksum changed; download the matching SHA-256 file below. The previous ZIP checksum was e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9.
 
             ### Included
             - Private one-to-one and group conversations, Contacts and preset-matched profiles.
@@ -102,13 +131,12 @@ jobs:
             [Support Hassenger on Buy Me a Coffee](https://buymeacoffee.com/fallenhero)
         working-directory: release-assets
         run: |
-          if gh release view v1.0.0 >/dev/null 2>&1; then
-            echo "v1.0.0 already exists; refusing to overwrite it."
-            exit 1
-          fi
-          gh release create v1.0.0 Hassenger-v1.0.0.zip Hassenger-v1.0.0.zip.sha256 --target "$RELEASE_SHA" --title "Hassenger 1.0.0" --notes "$RELEASE_NOTES" --draft
+          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = f542cb3f346fab205d9718429e610dd7c960a1ca
+          gh release upload v1.0.0 Hassenger-v1.0.0.zip Hassenger-v1.0.0.zip.sha256 --clobber
           mkdir downloaded
           gh release download v1.0.0 --dir downloaded --pattern 'Hassenger-v1.0.0.zip*'
           cmp Hassenger-v1.0.0.zip.sha256 downloaded/Hassenger-v1.0.0.zip.sha256
           (cd downloaded && sha256sum --check Hassenger-v1.0.0.zip.sha256)
-          gh release edit v1.0.0 --draft=false --latest
+          gh api --method PATCH repos/{owner}/{repo}/git/refs/tags/v1.0.0 -f sha="$RELEASE_SHA" -F force=true
+          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = "$RELEASE_SHA"
+          gh release edit v1.0.0 --notes "$RELEASE_NOTES" --latest
