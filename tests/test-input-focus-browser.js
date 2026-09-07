@@ -46,6 +46,8 @@ const path=require("node:path");
   assert.deepEqual(hydratedFocus,{focused:true,start:1,end:1},"Lazy editor search must retain focus and selection before the next animation frame");
   await page.keyboard.type("icrophone",{delay:0});assert.equal(await search.inputValue(),"microphone");
   await search.evaluate(e=>e.setSelectionRange(0,5));await page.keyboard.type("mega");assert.equal(await search.inputValue(),"megaphone");
+  await page.evaluate(()=>{const c=window.focusCard;c._focusComposer(c.shadowRoot.querySelector("[data-composer]").dataset.focusKey);});
+  await page.waitForTimeout(80);assert.equal(await search.evaluate(e=>e.getRootNode().activeElement===e),true,"A pending composer focus retry must not steal focus from the editor");
   assert.deepEqual(errors,[]);console.log("Composer, retained-history search, loaded search, Contacts search, status selection and editor search typing/focus checks passed.");
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
