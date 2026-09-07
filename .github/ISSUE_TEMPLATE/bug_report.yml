@@ -11,7 +11,7 @@ body:
     attributes:
       label: Versions
       description: Home Assistant, Hassenger card/integration, browser or Companion App, and device OS.
-      placeholder: "HA 2026.x; card 2.2.8; integration 2.2.1; Chrome ..."
+      placeholder: "HA 2026.x; card 1.0.0; integration 1.0.0; browser and version ..."
     validations:
       required: true
   - type: dropdown
