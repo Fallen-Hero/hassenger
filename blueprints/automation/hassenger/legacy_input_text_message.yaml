@@ -1,0 +1,86 @@
+blueprint:
+  name: Hassenger - Legacy input_text message
+  description: >-
+    Sends one person's input_text message into a clean Hassenger history helper,
+    keeps complete lines within Home Assistant's 255-character state limit, and
+    optionally runs notification actions.
+  domain: automation
+  input:
+    sender_input:
+      name: Sender input helper
+      selector:
+        entity:
+          domain: input_text
+    history_input:
+      name: Conversation history helper
+      selector:
+        entity:
+          domain: input_text
+    sender_name:
+      name: Sender display name
+      selector:
+        text:
+    run_notifications:
+      name: Run notification actions
+      default: false
+      selector:
+        boolean:
+    notification_actions:
+      name: Notification actions
+      description: Optional actions such as a mobile_app notification.
+      default: []
+      selector:
+        action:
+
+mode: queued
+max: 20
+
+triggers:
+  - trigger: state
+    entity_id: !input sender_input
+    to: null
+
+variables:
+  history_entity: !input history_input
+  sender_name_value: !input sender_name
+  run_notifications_value: !input run_notifications
+  chat_message: "{{ (trigger.to_state.state | default('', true) | trim)[:220] }}"
+  chat_timestamp: "{{ now().strftime('%m/%d/%Y %I:%M %p') }}"
+
+conditions:
+  - condition: template
+    value_template: "{{ chat_message | length > 0 }}"
+
+actions:
+  - choose:
+      - conditions: "{{ run_notifications_value }}"
+        sequence: !input notification_actions
+
+  - action: input_text.set_value
+    target:
+      entity_id: !input history_input
+    data:
+      value: >-
+        {% set new_line = chat_timestamp ~ ' - ' ~ sender_name_value ~ ': ' ~ chat_message %}
+        {% set old = states(history_entity) | trim %}
+        {% set room = 255 - (new_line | length) - 1 %}
+        {% if room > 0 and old %}
+          {% if (old | length) <= room %}
+            {% set previous = old %}
+          {% else %}
+            {% set tail = old[-room:] %}
+            {% set previous = tail.split('\n', 1)[1] if '\n' in tail else '' %}
+          {% endif %}
+        {% else %}
+          {% set previous = '' %}
+        {% endif %}
+        {{ (previous ~ '\n' if previous else '') ~ new_line }}
+
+  - delay:
+      milliseconds: 500
+
+  - action: input_text.set_value
+    target:
+      entity_id: !input sender_input
+    data:
+      value: ""

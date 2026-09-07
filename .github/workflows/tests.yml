@@ -1,0 +1,67 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      NODE_PATH: ${{ github.workspace }}/node_modules
+      HASSENGER_SCREENSHOT_DIR: ${{ runner.temp }}/hassenger-visual
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare clean release tree
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/hassenger-release"
+          git archive --format=tar HEAD | tar -xf - -C "$RUNNER_TEMP/hassenger-release"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - run: npm install --ignore-scripts
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Python and release checks
+        working-directory: ${{ runner.temp }}/hassenger-release
+        run: |
+          python -c "import ast, pathlib; [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for folder in ('custom_components', 'tests') for p in pathlib.Path(folder).rglob('*.py')]"
+          python tests/test-backend.py
+          python tests/test-integration-contract.py
+          python tests/test-media-upload.py
+          python tests/test-audio.py
+          python tests/test-blueprint.py
+          python tests/test-release-privacy.py .
+          python tests/test-release-layout.py
+      - name: Browser checks
+        working-directory: ${{ runner.temp }}/hassenger-release
+        run: |
+          node tests/test-regressions-browser.js dist/hassenger-card.js
+          for test in tests/test-*-browser.js; do
+            if [ "$test" = "tests/test-regressions-browser.js" ]; then continue; fi
+            node "$test" dist/hassenger-card.js
+          done
+      - name: Cross-browser smoke checks
+        working-directory: ${{ runner.temp }}/hassenger-release
+        run: node tests/cross-browser-smoke.js dist/hassenger-card.js
+      - name: Verify release tree remains clean
+        working-directory: ${{ runner.temp }}/hassenger-release
+        run: python tests/test-release-layout.py
+      - name: Upload visual snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hassenger-visual-snapshots
+          path: ${{ runner.temp }}/hassenger-visual/*.png
+          if-no-files-found: error

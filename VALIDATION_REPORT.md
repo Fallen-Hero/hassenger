@@ -1,0 +1,21 @@
+# Hassenger release-candidate validation
+
+Current deliverables: Hassenger Card 1.0.0, integration 1.0.0, mobile reply blueprint, and optional legacy `input_text` blueprint. This is the first-public-release review package, not a published release.
+
+## 1.0.0 release-review validation — current results
+
+- Contact-profile regression coverage checks phone/desktop widths across every preset, complete status text, custom display names, opt-in activity privacy, safe text rendering, non-navigating profile access, favorite toggling, close/focus restoration, and direct-chat actions. The profile uses existing participant-scoped APIs; it introduces no new presence collection.
+- Reproduced conversation-menu clipping: a viewport-relative maximum allowed the last actions to extend below the clipping card. The fix bounds menu size/position to the actual card and visual viewport and updates geometry after scrolling/resizing.
+- The dedicated menu suite passed 228 cases: 14 presets, Refined/Classic placement, short 200/300/400/460 px cards, phone/desktop viewports, 75%/150% scale, page scrolling, last-action hit testing and safe Delete confirmation/cancellation.
+- New cards default to a preserved 400 px conversation area. Explicit prior overall-height and preservation settings remain authoritative.
+- The menu suite also checks 64 phone/desktop navigation configurations for duplicate inbox/Contacts switchers and preserved actions. Editor-driven rename regressions cover conversation headings, both inbox styles, Contacts rows/search, multiple matching overrides, typing labels, and restoring original names. These are local display overrides; stored thread titles are checked for preservation.
+- All 22 Chromium browser suites passed, including the 388-control/292-path editor audit, input-focus tests, Contacts, presets, mobile layouts, privacy-related UI, media, history and multi-card session checks.
+- All seven Python suites passed. A fresh isolated YAML dependency allowed both blueprint schemas/routing checks to run successfully.
+- Chromium and WebKit desktop/mobile smoke checks passed. Firefox remains an open working-host/CI gate; previous local runs failed before a page opened.
+- Integration/card metadata, resource URLs and current setup instructions use 1.0.0. Repository links target Fallen-Hero/hassenger. Previous 2.x versions are explicitly private development history, not public releases.
+- The README-gallery package leaves runtime card, integration, blueprint, and branding bytes unchanged from the audited contact-profiles review archive. It updates documentation, screenshot fixtures and assets, the screenshot icon development dependency, and the release allowlist. This is not a claim that a live Home Assistant install or backup/restore was performed.
+- Public setup documentation is written for first-time users. Private development transition notes are retained outside the release package.
+- GitHub-upload preparation separates the tested release tree from Git metadata, installed Node dependencies, generated package locks, and screenshot artifacts. The workflow exports the checked-out commit, runs the strict allowlist before and after browser testing, and uploads images from a separate artifact folder. Hassfest receives read-only checkout permission; checkout credentials are not retained. Actual hosted Actions/HACS/Hassfest results still require the repository upload.
+- Six sanitized screenshots show desktop/mobile chat, Contacts, and preset-matched contact profiles. They render fictional Home Assistant data with official Material Design Icons rather than placeholder glyphs; the icon license is included. The final release tree has 83 allowlisted files. The strict builder reruns all local gates and verifies every archive member against its source hash.
+
+Publication remains blocked on the owner-controlled HACS/Hassfest/GitHub Actions checks, real minimum-Home-Assistant-version verification, real install/restart/backup/restore, devices/notifications/voice, assistive technology and overnight use. Preparing this review package did not create a repository, tag or GitHub release.

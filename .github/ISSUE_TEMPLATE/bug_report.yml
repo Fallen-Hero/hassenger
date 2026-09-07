@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible Hassenger problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Remove names, private messages, addresses, tokens, and signed URLs before submitting.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Home Assistant, Hassenger card/integration, browser or Companion App, and device OS.
+      placeholder: "HA 2026.x; card 2.2.8; integration 2.2.1; Chrome ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Storage mode
+      options: [Hassenger Persistent Mode, Legacy Input Mode]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include expected behavior and the exact steps to reproduce.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Minimal sanitized card configuration
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Do not include credentials, personal information, or private conversation contents.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I restarted Home Assistant and confirmed the loaded card/integration versions.
+          required: true
+        - label: I removed personal information, credentials, and signed URLs.
+          required: true

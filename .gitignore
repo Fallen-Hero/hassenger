@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+node_modules/
+playwright-report/
+test-results/
+.pytest_cache/
+*.log
+*.zip
+*.sha256
+qa-*.png

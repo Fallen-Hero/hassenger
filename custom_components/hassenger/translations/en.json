@@ -1,0 +1,21 @@
+{
+  "title": "Hassenger",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Hassenger",
+        "description": "Create local persistent storage for private Hassenger conversations."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Hassenger is already configured."
+    }
+  },
+  "services": {
+    "create_thread": { "name": "Create thread", "description": "Create a private Hassenger conversation." },
+    "send_message": { "name": "Send message", "description": "Send an automation or system message to a Hassenger thread." },
+    "clear_thread": { "name": "Clear thread", "description": "Delete every message from a thread while keeping the conversation." },
+    "delete_thread": { "name": "Delete thread", "description": "Permanently delete a conversation and all of its messages." },
+    "prune": { "name": "Prune old Hassenger messages", "description": "Manually remove old messages from every conversation while keeping the conversations themselves." }
+  }
+}

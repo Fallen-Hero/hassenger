@@ -1,0 +1,13 @@
+{
+  "domain": "hassenger",
+  "name": "Hassenger",
+  "version": "1.0.0",
+  "config_flow": true,
+  "single_config_entry": true,
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "documentation": "https://github.com/Fallen-Hero/hassenger",
+  "issue_tracker": "https://github.com/Fallen-Hero/hassenger/issues",
+  "requirements": [],
+  "codeowners": ["@Fallen-Hero"]
+}

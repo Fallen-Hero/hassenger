@@ -1,0 +1,155 @@
+create_thread:
+  fields:
+    title:
+      required: true
+      selector:
+        text:
+    participants:
+      required: true
+      selector:
+        text:
+          multiple: true
+    thread_id:
+      selector:
+        text:
+    icon:
+      default: mdi:message
+      selector:
+        icon:
+    image:
+      selector:
+        text:
+    color:
+      selector:
+        text:
+
+send_message:
+  fields:
+    thread_id:
+      required: true
+      selector:
+        text:
+    message:
+      selector:
+        text:
+          multiline: true
+    attachment_url:
+      description: Optional Home Assistant media reference, /local/ path, or HTTP(S) image/GIF URL.
+      selector:
+        text:
+    attachment_content_type:
+      default: image/*
+      selector:
+        text:
+    attachment_name:
+      default: Shared image
+      selector:
+        text:
+    sender_name:
+      default: Home Assistant
+      selector:
+        text:
+    message_type:
+      default: system
+      selector:
+        select:
+          options:
+            - text
+            - system
+            - success
+            - warning
+            - error
+    notify:
+      default: true
+      selector:
+        boolean:
+
+clear_thread:
+  fields:
+    thread_id:
+      required: true
+      selector:
+        text:
+
+delete_thread:
+  fields:
+    thread_id:
+      required: true
+      selector:
+        text:
+
+prune:
+  name: Prune old Hassenger messages
+  description: Manually remove messages older than the selected age from every conversation. Conversations remain available; this action is not scheduled automatically.
+  fields:
+    retention_days:
+      name: Retention age
+      description: Remove messages older than this many days. The default is 365 days.
+      default: 365
+      selector:
+        number:
+          min: 1
+          max: 3650
+          mode: box
+
+speak_message:
+  name: Speak Hassenger message
+  description: Play an optional sound, wait, then speak through Home Assistant TTS.
+  fields:
+    tts_engine:
+      required: true
+      selector:
+        entity:
+          filter:
+            - domain: tts
+    media_player_entity_id:
+      required: true
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: media_player
+    message:
+      required: true
+      selector:
+        text:
+          multiline: true
+    cache:
+      default: true
+      selector:
+        boolean:
+    language:
+      name: TTS language
+      description: Optional language code such as en-US. Leave blank to use the TTS engine default.
+      selector:
+        text:
+    announce:
+      name: Use media-player announcement mode
+      description: Recommended for complete playback on Cast and Music Assistant players.
+      default: true
+      selector:
+        boolean:
+    use_pre_announce:
+      name: Play the player's pre-announcement sound
+      description: Music Assistant's optional bell/whistle before the spoken message.
+      default: false
+      selector:
+        boolean:
+    chime_media_content_id:
+      name: Optional chime media ID
+      selector:
+        text:
+    chime_media_content_type:
+      default: music
+      selector:
+        text:
+    chime_wait_seconds:
+      name: Chime-to-speech wait
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          step: 0.25
+          unit_of_measurement: s
+          mode: slider

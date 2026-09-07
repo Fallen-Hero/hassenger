@@ -1,0 +1,379 @@
+blueprint:
+  name: Hassenger - Mobile replies, TTS and optional sounds
+  description: >-
+    Sends an actionable mobile notification for messages from one selected
+    Hassenger person. Optionally announces the same message through one or
+    more selected media players, with a strictly optional audio chime and a
+    natural punctuation pause between the introduction and message. It
+    honors each recipient's Hassenger Mute notifications setting and delegates
+    TTS generation, announcement playback, both optional sounds,
+    and the exact chime-to-speech wait to Hassenger integration 1.0.0. It
+    fully buffers Piper audio before starting playback and separately controls
+    Music Assistant's pre-announcement sound, so reliable announcement playback
+    does not require its bell/whistle. A native Cast speaker can still make its
+    own connection tone. Uses Hassenger's dedicated hassenger_message_sent
+    event so replies sent with notify false cannot create a second route.
+    Requires Hassenger integration 1.0.0 or newer.
+  domain: automation
+  input:
+    incoming_person:
+      name: Message from
+      description: Select the person whose Hassenger messages should run this route.
+      selector:
+        entity:
+          filter:
+            - domain: person
+    mobile_device:
+      name: Phone or tablet to notify
+      description: Select the Companion App device that receives the notification.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    reply_person:
+      name: Reply as
+      description: Select the person using this phone.
+      selector:
+        entity:
+          filter:
+            - domain: person
+    dashboard_url:
+      name: Hassenger dashboard path
+      description: Relative Home Assistant path opened by View chat.
+      default: /lovelace/hassenger
+      selector:
+        text:
+    reply_timeout_minutes:
+      name: Reply timeout
+      description: Stop waiting for an old notification reply after this many minutes.
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 1440
+          step: 1
+          mode: slider
+    conversation_id:
+      name: Only this conversation (optional)
+      description: >-
+        Leave blank to use every conversation from the selected person. To
+        attach this route to one conversation, paste its ID from Hassenger's
+        Conversation actions menu.
+      default: ""
+      selector:
+        text:
+    tts_enabled:
+      name: Announce messages with TTS
+      description: Also speak matching messages on the selected media players.
+      default: false
+      selector:
+        boolean:
+    tts_engine:
+      name: TTS engine
+      description: Optional unless TTS announcements are enabled.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: tts
+    tts_media_players:
+      name: Media players for announcements
+      description: Select one or more speakers that should announce the message.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          reorder: true
+          filter:
+            - domain: media_player
+    tts_announce_enabled:
+      name: Use media-player announcement mode
+      description: >-
+        Recommended and enabled by default. This is required for complete TTS
+        playback on some Cast and Music Assistant players. Turn it off only if
+        direct playback is known to work on the selected player.
+      default: true
+      selector:
+        boolean:
+    tts_pre_announce_enabled:
+      name: Play the player's pre-announcement sound
+      description: >-
+        Controls Music Assistant's built-in bell/whistle independently from
+        announcement playback. Leave off for full TTS without that extra sound.
+        Native Cast players may ignore this setting and make their own connection tone.
+      default: false
+      selector:
+        boolean:
+    tts_chime_enabled:
+      name: Play an extra Hassenger chime before TTS
+      description: >-
+        Off means the selected sound below is never played. This setting does
+        not control a Chromecast or Nest speaker's own built-in connection tone.
+      default: false
+      selector:
+        boolean:
+    tts_chime_media:
+      name: Chime or sound
+      description: >-
+        Select an audio file or other playable sound from Home Assistant's
+        media browser. It is only used when Play an extra Hassenger chime is on.
+      default: {}
+      selector:
+        media:
+          accept:
+            - audio/*
+    tts_chime_wait_seconds:
+      name: Chime-to-speech wait
+      description: >-
+        Seconds to wait after starting the optional selected Hassenger sound
+        before speaking. It has no effect when that extra sound is switched
+        off and does not control a speaker's built-in tones.
+      default: 1.5
+      selector:
+        number:
+          min: 0
+          max: 15
+          step: 0.25
+          unit_of_measurement: s
+          mode: slider
+    tts_include_sender:
+      name: Include sender's name
+      description: Say who sent the message before reading it.
+      default: true
+      selector:
+        boolean:
+    tts_prefix:
+      name: Announcement prefix
+      description: Words spoken before the sender and message.
+      default: New Hassenger message from
+      selector:
+        text:
+    tts_pause_style:
+      name: Intro-to-message pause
+      description: >-
+        Select punctuation used inside one continuous TTS request. Natural is
+        recommended for Piper and Chromecast. This avoids the long startup gap
+        caused by sending the introduction and message as two separate calls.
+      default: natural
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - label: Natural pause (period)
+              value: natural
+            - label: Short pause (comma)
+              value: short
+            - label: Strong pause (ellipsis)
+              value: strong
+            - label: No punctuation pause
+              value: none
+    tts_cache:
+      name: Cache TTS audio
+      description: Cache generated speech when supported by the selected engine.
+      default: true
+      selector:
+        boolean:
+    diagnostic_notification:
+      name: Show matching diagnostics
+      description: >-
+        Enable temporarily while testing. If a message does not match the
+        selected Person, Home Assistant creates a persistent diagnostic notice.
+      default: false
+      selector:
+        boolean:
+
+mode: parallel
+max: 20
+
+triggers:
+  - trigger: event
+    event_type: hassenger_message_sent
+    event_data:
+      kind: message_sent
+
+conditions: []
+
+actions:
+  - variables:
+      selected_incoming_person: !input incoming_person
+      selected_reply_person: !input reply_person
+      configured_url: !input dashboard_url
+      timeout_minutes: !input reply_timeout_minutes
+      selected_conversation_id: !input conversation_id
+      diagnostics_enabled: !input diagnostic_notification
+      announcement_enabled: !input tts_enabled
+      announcement_engine: !input tts_engine
+      announcement_players: !input tts_media_players
+      announcement_mode_enabled: !input tts_announce_enabled
+      announcement_pre_announce_enabled: !input tts_pre_announce_enabled
+      announcement_chime_enabled: !input tts_chime_enabled
+      announcement_chime_media: !input tts_chime_media
+      announcement_chime_wait: !input tts_chime_wait_seconds
+      announcement_include_sender: !input tts_include_sender
+      announcement_prefix: !input tts_prefix
+      announcement_pause_style: !input tts_pause_style
+      announcement_cache: !input tts_cache
+      incoming_person_entity: >-
+        {{ trigger.event.data.sender_person_entity_id | default('') | string | trim }}
+      incoming_sender_id: >-
+        {{ trigger.event.data.sender_id | default('') | string | trim }}
+      incoming_thread_id: >-
+        {{ trigger.event.data.thread_id | default('') | string | trim }}
+      incoming_sender: >-
+        {{ trigger.event.data.sender_name | default('Hassenger') | string | trim }}
+      incoming_attachment: >-
+        {{ trigger.event.data.attachment | default(none) }}
+      incoming_message: >-
+        {% set text = trigger.event.data.text | default('') | string | trim %}
+        {{ text if text else ('Sent an image' if trigger.event.data.attachment | default(none) else 'New message') }}
+      selected_incoming_user_id: >-
+        {{ state_attr(selected_incoming_person, 'user_id') | default('', true) | string | trim }}
+      selected_reply_user_id: >-
+        {{ state_attr(selected_reply_person, 'user_id') | default('', true) | string | trim }}
+      selected_incoming_name: >-
+        {{ state_attr(selected_incoming_person, 'friendly_name') | default('', true) | string | trim }}
+      reply_name: >-
+        {{ state_attr(selected_reply_person, 'friendly_name') | default('Home Assistant', true) | string | trim }}
+      open_url: >-
+        {% set path = configured_url | string | trim %}
+        {{ path if path.startswith('/') else '/' ~ path }}
+      action_reply: "{{ 'HASSENGER_REPLY_' ~ context.id }}"
+      sender_matches: >-
+        {{ incoming_person_entity == selected_incoming_person
+           or (selected_incoming_user_id | length > 0
+               and incoming_sender_id == selected_incoming_user_id)
+           or (selected_incoming_name | length > 0
+               and incoming_sender | lower == selected_incoming_name | lower) }}
+      conversation_matches: >-
+        {{ selected_conversation_id | string | trim | length == 0
+           or incoming_thread_id == selected_conversation_id | string | trim }}
+      incoming_muted_by: >-
+        {{ trigger.event.data.muted_by | default([], true) }}
+      route_is_muted: >-
+        {{ selected_reply_user_id | length > 0
+           and selected_reply_user_id in incoming_muted_by }}
+      announcement_intro: >-
+        {% set prefix = announcement_prefix | string | trim %}
+        {% if announcement_include_sender | bool %}
+          {{ ((prefix ~ ' ') if prefix else '') ~ incoming_sender }}
+        {% else %}
+          {{ prefix }}
+        {% endif %}
+      announcement_text: >-
+        {% set intro = announcement_intro | string | trim %}
+        {% set separators = {
+          'short': ', ',
+          'natural': '. ',
+          'strong': '... ',
+          'none': ' '
+        } %}
+        {% set separator = separators.get(announcement_pause_style, '. ') %}
+        {{ ((intro ~ separator) if intro else '') ~ incoming_message }}
+      chime_is_selected: >-
+        {{ announcement_chime_media is mapping
+           and announcement_chime_media.get('media_content_id', '') | string | trim | length > 0 }}
+      chime_should_play: >-
+        {% set enabled = announcement_chime_enabled | string | lower | trim %}
+        {% set selected = chime_is_selected | string | lower | trim %}
+        {{ enabled in ['true', 'on', 'yes', '1']
+           and selected in ['true', 'on', 'yes', '1'] }}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ sender_matches | bool
+                 and conversation_matches | bool
+                 and not route_is_muted | bool
+                 and incoming_thread_id | length > 0 }}
+        sequence:
+          - device_id: !input mobile_device
+            domain: mobile_app
+            type: notify
+            title: "New Hassenger message from {{ incoming_sender }}"
+            message: "{{ incoming_message }}"
+            data:
+              tag: "hassenger_{{ incoming_thread_id }}"
+              group: Hassenger
+              url: "{{ open_url }}"
+              actions:
+                - action: "{{ action_reply }}"
+                  title: Reply
+                  behavior: textInput
+                  textInputButtonTitle: Send
+                  textInputPlaceholder: Type your reply
+                  icon: sfsymbols:arrowshape.turn.up.left
+                - action: URI
+                  title: View chat
+                  uri: "{{ open_url }}"
+                  icon: sfsymbols:message
+
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >-
+                      {{ announcement_enabled | bool
+                         and announcement_engine | string | trim | length > 0
+                         and announcement_players | count > 0 }}
+                sequence:
+                  - alias: Controlled optional chime, exact wait, and TTS
+                    action: hassenger.speak_message
+                    continue_on_error: true
+                    data:
+                      tts_engine: "{{ announcement_engine }}"
+                      media_player_entity_id: "{{ announcement_players }}"
+                      message: "{{ announcement_text | trim }}"
+                      cache: "{{ announcement_cache | bool }}"
+                      announce: "{{ announcement_mode_enabled | bool }}"
+                      use_pre_announce: "{{ announcement_pre_announce_enabled | bool }}"
+                      chime_media_content_id: >-
+                        {{ announcement_chime_media.get('media_content_id', '')
+                           if chime_should_play | bool else '' }}
+                      chime_media_content_type: >-
+                        {{ announcement_chime_media.get('media_content_type', 'music')
+                           if chime_should_play | bool else 'music' }}
+                      chime_wait_seconds: "{{ announcement_chime_wait | float(0) }}"
+            default: []
+
+          - wait_for_trigger:
+              - trigger: event
+                event_type: mobile_app_notification_action
+                event_data:
+                  action: "{{ action_reply }}"
+            timeout:
+              minutes: "{{ timeout_minutes }}"
+            continue_on_timeout: false
+
+          - condition: template
+            value_template: >-
+              {{ wait.trigger is not none
+                 and wait.trigger.event.data.reply_text | default('') | trim | length > 0 }}
+
+          - action: hassenger.send_message
+            data:
+              thread_id: "{{ incoming_thread_id }}"
+              sender_name: "{{ reply_name }}"
+              message_type: text
+              notify: false
+              message: "{{ wait.trigger.event.data.reply_text | trim }}"
+
+      - conditions:
+          - condition: template
+            value_template: "{{ diagnostics_enabled | bool }}"
+        sequence:
+          - action: persistent_notification.create
+            data:
+              title: Hassenger blueprint did not match sender
+              message: >-
+                Selected Person: {{ selected_incoming_person }};
+                selected user ID: {{ selected_incoming_user_id or '(blank)' }};
+                event Person: {{ incoming_person_entity or '(blank)' }};
+                event sender ID: {{ incoming_sender_id or '(blank)' }};
+                event sender name: {{ incoming_sender or '(blank)' }};
+                selected conversation ID: {{ selected_conversation_id or '(all)' }};
+                event conversation ID: {{ incoming_thread_id or '(blank)' }};
+                selected reply user ID: {{ selected_reply_user_id or '(blank)' }};
+                muted recipient IDs: {{ incoming_muted_by }};
+                route muted: {{ route_is_muted }};
+                thread ID present: {{ incoming_thread_id | length > 0 }}.
+    default: []

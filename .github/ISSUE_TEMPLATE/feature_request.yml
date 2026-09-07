@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a focused Hassenger improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User need
+      description: Describe the problem or workflow, not only the proposed control.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Area
+      options: [Card interface, Visual editor, Contacts and presence, Persistent integration, Legacy compatibility, Mobile notifications, TTS and Assist, Documentation]
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy, permission, or compatibility considerations
