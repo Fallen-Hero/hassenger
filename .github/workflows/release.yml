@@ -1,0 +1,114 @@
+name: Publish Hassenger 1.0.0
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hassenger-first-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      NODE_PATH: ${{ github.workspace }}/node_modules
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Export exact source commit
+        run: |
+          mkdir -p "$RUNNER_TEMP/hassenger-release"
+          git archive --format=tar HEAD | tar -xf - -C "$RUNNER_TEMP/hassenger-release"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
+      - run: npm install --ignore-scripts
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - uses: home-assistant/actions/hassfest@master
+      - uses: hacs/action@main
+        with:
+          category: integration
+      - name: Test and build immutable archive
+        working-directory: ${{ runner.temp }}/hassenger-release
+        run: python -B scripts/build-release.py --engines chromium,firefox,webkit --output "$RUNNER_TEMP/release-assets/Hassenger-v1.0.0.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hassenger-1.0.0-release-assets
+          path: |
+            ${{ runner.temp }}/release-assets/Hassenger-v1.0.0.zip
+            ${{ runner.temp }}/release-assets/Hassenger-v1.0.0.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: hassenger-1.0.0-release-assets
+          path: release-assets
+      - name: Verify archive checksum
+        working-directory: release-assets
+        run: sha256sum --check Hassenger-v1.0.0.zip.sha256
+      - name: Create draft, verify uploaded files, and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_NOTES: |
+            ## Hassenger 1.0.0
+            The first public release: messaging for your Home Assistant household.
+
+            ### Included
+            - Private one-to-one and group conversations, Contacts and preset-matched profiles.
+            - Status messages, typing indicators, read receipts, reactions and conversation search.
+            - Images, GIFs, PDFs and audio attachments; Quick messages and private reminders.
+            - Assist/TTS destinations, optional actionable phone notifications and configurable branding.
+
+            ### Compatibility and testing
+            Requires Home Assistant Core **2026.9.1 or newer**. The maintainer confirmed restart, two-account messaging, uploads and mobile use on **2026.9.1**.
+            The exact release commit passed seven Python suites, 22 Chromium browser suites, Chromium/Firefox/WebKit smoke tests, HACS, Hassfest and archive checks.
+            Older Home Assistant versions and every phone/speaker, backup/restore and accessibility combination are not certified. Speech-to-text depends on browser support, HTTPS and microphone permission.
+
+            ### Install
+            1. Add **Fallen-Hero/hassenger** as a HACS custom repository, category **Integration**.
+            2. Download Hassenger and restart Home Assistant.
+            3. Add the Hassenger integration under Settings > Devices & services.
+            4. Add /hassenger/hassenger-card.js?v=1.0.0 as a JavaScript-module dashboard resource.
+            5. Add a card with type: custom:hassenger-card and data_source: hassenger.
+
+            For manual installation, extract the full ZIP and copy custom_components/hassenger into config/custom_components. Do not copy the entire source ZIP into that integration folder.
+            See README.md and FIRST_TIME_SETUP.md for full instructions and optional blueprints.
+
+            ### Downloads
+            Hassenger-v1.0.0.zip contains the complete source, integration, bundled card, blueprints, documentation and branding.
+            Hassenger-v1.0.0.zip.sha256 verifies that exact ZIP.
+
+            [Support Hassenger on Buy Me a Coffee](https://buymeacoffee.com/fallenhero)
+        working-directory: release-assets
+        run: |
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo "v1.0.0 already exists; refusing to overwrite it."
+            exit 1
+          fi
+          gh release create v1.0.0 Hassenger-v1.0.0.zip Hassenger-v1.0.0.zip.sha256 --target "$RELEASE_SHA" --title "Hassenger 1.0.0" --notes "$RELEASE_NOTES" --draft
+          mkdir downloaded
+          gh release download v1.0.0 --dir downloaded --pattern 'Hassenger-v1.0.0.zip*'
+          cmp Hassenger-v1.0.0.zip.sha256 downloaded/Hassenger-v1.0.0.zip.sha256
+          (cd downloaded && sha256sum --check Hassenger-v1.0.0.zip.sha256)
+          gh release edit v1.0.0 --draft=false --latest
