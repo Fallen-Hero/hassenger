@@ -27,6 +27,7 @@ branding_files = {
     "branding/README.md",
     "branding/hassenger-original-mark.png", "branding/hassenger-original-wordmark-wide.png",
     "branding/hassenger-original-wordmark-banner.png",
+    "branding/hassenger-full-logo-transparent.png", "branding/hassenger-full-logo-light.png",
 }
 blueprint_files = {
     "blueprints/automation/hassenger/legacy_input_text_message.yaml",
@@ -143,5 +144,12 @@ for filename, expected_size in brand_dimensions.items():
         raise SystemExit(f"Wrong brand dimensions for {filename}: {size[:2]} != {expected_size}")
     if min(size[2]) != 0 or max(size[2]) != 255:
         raise SystemExit(f"Brand asset must contain transparent and opaque pixels: {filename}")
+
+for filename in ("hassenger-full-logo-transparent.png", "hassenger-full-logo-light.png"):
+    width, height, alpha = png_pixels(root / "branding" / filename)
+    if (width, height) != (2048, 512) or min(alpha) != 0 or max(alpha) != 255:
+        raise SystemExit(f"README full logo needs 2048 x 512 RGBA transparency: {filename}")
+    if any(alpha[:width] + alpha[-width:]):
+        raise SystemExit(f"README full logo has an opaque background edge: {filename}")
 
 print(f"Release layout allowlist passed: {len(actual)} intentional files, exact original branding hashes, required HACS icon sizes, and real alpha transparency.")
