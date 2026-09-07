@@ -14,7 +14,6 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
       NODE_PATH: ${{ github.workspace }}/node_modules
-      HASSENGER_SCREENSHOT_DIR: ${{ runner.temp }}/hassenger-visual
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +23,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/hassenger-release"
           git archive --format=tar HEAD | tar -xf - -C "$RUNNER_TEMP/hassenger-release"
+          echo "HASSENGER_SCREENSHOT_DIR=$RUNNER_TEMP/hassenger-visual" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
