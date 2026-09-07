@@ -51,6 +51,8 @@ The packaged suite currently contains **22 focused Playwright browser suites**, 
 
 ## Local commands
 
+Validate workflow syntax and GitHub expression contexts with [actionlint](https://github.com/rhysd/actionlint): `actionlint -shellcheck= -pyflakes= .github/workflows/tests.yml .github/workflows/validate.yml`. The corrective package was checked with version 1.7.12. Ordinary YAML parsing does not detect unsupported expression contexts. Repository topics are also required by HACS and are managed in GitHub repository settings, not in the ZIP.
+
 GitHub Actions exports the checked-out commit into a clean temporary release tree before testing it. Git metadata, installed Node dependencies, and the generated package lock remain in the checkout; screenshots go to a separate temporary artifact folder. The strict release allowlist runs before and after the browser tests without ignoring unexpected packaged files. A local checkout containing `.git` or installed dependencies must likewise be exported to a clean folder before running the strict package check or release builder.
 
 Install Python 3.12+, Node 20+, and PyYAML. Run `npm install` to install the declared development dependencies (Playwright 1.62.1 and Material Design Icons 7.4.47), then install Playwright Chromium, Firefox, and WebKit. `HASSENGER_BROWSER_PATH` may point focused Chromium suites to an installed Chrome/Chromium executable.
