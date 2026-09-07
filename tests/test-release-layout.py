@@ -28,6 +28,7 @@ branding_files = {
     "branding/hassenger-original-mark.png", "branding/hassenger-original-wordmark-wide.png",
     "branding/hassenger-original-wordmark-banner.png",
     "branding/hassenger-full-logo-transparent.png", "branding/hassenger-full-logo-light.png",
+    "branding/hassenger-full-logo-banner.png",
 }
 blueprint_files = {
     "blueprints/automation/hassenger/legacy_input_text_message.yaml",
@@ -152,4 +153,9 @@ for filename in ("hassenger-full-logo-transparent.png", "hassenger-full-logo-lig
     if any(alpha[:width] + alpha[-width:]):
         raise SystemExit(f"README full logo has an opaque background edge: {filename}")
 
-print(f"Release layout allowlist passed: {len(actual)} intentional files, exact original branding hashes, required HACS icon sizes, and real alpha transparency.")
+readme = (root / "README.md").read_text(encoding="utf-8")
+expected_logo = "![Hassenger full logo with house, chat bubbles, and name](https://raw.githubusercontent.com/Fallen-Hero/hassenger/main/branding/hassenger-full-logo-banner.png)"
+if not readme.startswith(expected_logo) or "<picture" in readme or "<source" in readme:
+    raise SystemExit("README logo must use HACS-compatible Markdown with an absolute image URL")
+
+print(f"Release layout allowlist passed: {len(actual)} intentional files, exact original branding hashes, required HACS icon sizes, real alpha transparency, and HACS-compatible README logo.")
