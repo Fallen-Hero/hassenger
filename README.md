@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/hassenger-original-mark.png" alt="Hassenger house and chat bubbles logo" width="144">
+  <img src="branding/hassenger-original-wordmark-banner.png" alt="Hassenger full logo with house, chat bubbles, and name" width="640">
 </p>
 
 # Hassenger
