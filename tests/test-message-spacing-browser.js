@@ -183,7 +183,7 @@ const assert = require("assert");
     const ttsTool={name:"Speaker",sender_type:"tts",icon:"mdi:speaker-message",color:"#ff9800",enabled:true,tts_entity:"tts.piper",media_player_entity:"media_player.office",tts_language:"en-US",tts_cache:true,tts_announce:false,tts_pre_announce:true,tts_chime_enabled:false,tts_chime_media:{media_content_id:"media-source://media_source/local/ding.mp3",media_content_type:"audio/mpeg"},tts_chime_wait:4.5};
     const ttsConfig={...base,preset:"rgb",show_inbox:true,personal_threads:[ttsTool],quick_message_layout:"dropdowns",quick_messages:[]};ttsCard.setConfig(ttsConfig);ttsCard.hass=hass;await new Promise(resolve=>setTimeout(resolve,40));
     [...ttsCard.shadowRoot.querySelectorAll("[data-thread-index]")].find(button=>button.textContent.includes("Speaker"))?.click();await new Promise(resolve=>setTimeout(resolve,20));
-    let ttsComposer=ttsCard.shadowRoot.querySelector("textarea[data-composer]");ttsComposer.value="Direct playback";ttsComposer.dispatchEvent(new Event("input",{bubbles:true}));ttsCard.shadowRoot.querySelector("[data-send]").click();await new Promise(resolve=>setTimeout(resolve,25));
+    let ttsComposer=ttsCard.shadowRoot.querySelector("textarea[data-composer]");ttsComposer.focus();ttsComposer.value="Direct playback";ttsComposer.dispatchEvent(new Event("input",{bubbles:true}));ttsCard.shadowRoot.querySelector("[data-send]").click();await new Promise(resolve=>setTimeout(resolve,25));
     const directTts=serviceCalls.at(-1),directTtsFocused=ttsCard.shadowRoot.activeElement===ttsCard.shadowRoot.querySelector("textarea[data-composer]");
     ttsCard.setConfig({...ttsConfig,personal_threads:[{...ttsTool,tts_language:"",tts_announce:true,tts_pre_announce:true,tts_chime_enabled:true,tts_chime_wait:3.25}]});
     await sleep(40);
@@ -215,7 +215,7 @@ const assert = require("assert");
     class TestSpeechRecognition{start(){recognitionStarts++;this.onstart?.();setTimeout(()=>{this.onresult?.({results:[[{transcript:"Voice test"}]]});this.onend?.();},0);}stop(){this.onend?.();}}
     window.SpeechRecognition=TestSpeechRecognition;
     const voiceCard=document.createElement("hassenger-card"),voiceNotices=[];voiceCard.addEventListener("hass-notification",event=>voiceNotices.push(event.detail.message));document.body.append(voiceCard);voiceCard.setConfig({...base,show_voice_input:true,quick_message_layout:"dropdowns",quick_messages:[]});voiceCard.hass=hass;await new Promise(resolve=>setTimeout(resolve,35));
-    voiceCard.shadowRoot.querySelector("[data-voice]").click();await new Promise(resolve=>setTimeout(resolve,30));
+    const voiceButton=voiceCard.shadowRoot.querySelector("[data-voice]");voiceButton.focus();voiceButton.click();await new Promise(resolve=>setTimeout(resolve,30));
     const voiceSuccess={microphoneRequests,microphoneTracksStopped,recognitionStarts,draft:voiceCard.shadowRoot.querySelector("textarea[data-composer]")?.value,focused:voiceCard.shadowRoot.activeElement===voiceCard.shadowRoot.querySelector("textarea[data-composer]")};
     Object.defineProperty(navigator,"mediaDevices",{value:{getUserMedia:async()=>{const error=new Error("Permission denied");error.name="NotAllowedError";throw error;}},configurable:true});
     voiceCard.shadowRoot.querySelector("[data-voice]").click();await new Promise(resolve=>setTimeout(resolve,20));
