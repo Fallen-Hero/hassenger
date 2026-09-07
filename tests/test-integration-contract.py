@@ -19,6 +19,9 @@ audio = (root / "audio.py").read_text(encoding="utf-8")
 media_upload = (root / "media_upload.py").read_text(encoding="utf-8")
 
 assert manifest["version"] == "1.0.0"
+assert "http" in manifest["dependencies"]
+assert list(manifest) == ["domain", "name", *sorted(set(manifest) - {"domain", "name"})]
+assert "CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)" in setup
 assert 'INTEGRATION_VERSION = "1.0.0"' in const
 assert 'MAX_TIMESTAMP_LENGTH = 64' in const
 assert 'MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024' in const
