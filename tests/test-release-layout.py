@@ -33,7 +33,7 @@ blueprint_files = {
     "blueprints/automation/hassenger/mobile_actionable_reply.yaml",
 }
 workflow_files = {
-    ".github/workflows/tests.yml", ".github/workflows/validate.yml",
+    ".github/workflows/tests.yml", ".github/workflows/validate.yml", ".github/workflows/release.yml",
     ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml",
     ".github/ISSUE_TEMPLATE/config.yml", ".github/pull_request_template.md",
 }
