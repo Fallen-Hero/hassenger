@@ -57,7 +57,7 @@ Requires **Home Assistant Core 2026.9.1 or newer**. The first release was tested
 3. Go to **Settings → Devices & services → Add integration** and select **Hassenger**.
 4. Add this dashboard resource as a **JavaScript module**:
 
-   `/hassenger/hassenger-card.js?v=1.0.0`
+   `/hassenger/hassenger-card.js?v=1.0.1`
 
 5. Add a Manual card:
 

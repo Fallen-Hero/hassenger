@@ -1,6 +1,6 @@
 # Hassenger first-time setup
 
-Install Hassenger 1.0.0 on Home Assistant Core 2026.9.1 or newer using this guide. New cards default to a preserved 400 px conversation area.
+Install Hassenger 1.0.1 on Home Assistant Core 2026.9.1 or newer using this guide. New cards default to a preserved 400 px conversation area.
 
 See [FEATURE_GUIDE.md](FEATURE_GUIDE.md) for optional controls and customization.
 
@@ -16,21 +16,21 @@ Copy the complete `custom_components/hassenger` folder so this file exists:
 
 Restart Home Assistant. Open **Settings → Devices & services → Add integration**, search for **Hassenger**, and add its single instance.
 
-Checkpoint: Hassenger appears without a setup error. This package's integration version is **1.0.0**.
+Checkpoint: Hassenger appears without a setup error. This package's integration version is **1.0.1**.
 
 ## 2. Install the card
 
 Under **Settings → Dashboards → Resources**, add:
 
 ```text
-/hassenger/hassenger-card.js?v=1.0.0
+/hassenger/hassenger-card.js?v=1.0.1
 ```
 
 Choose **JavaScript module**, save, and refresh the browser.
 
-Checkpoint: Hassenger Card appears in the card picker or the browser console reports `HASSENGER CARD v1.0.0`.
+Checkpoint: Hassenger Card appears in the card picker or the browser console reports `HASSENGER CARD v1.0.1`.
 
-Manual alternative: copy `hassenger-card.js` to `/config/www/hassenger-card.js` and use `/local/hassenger-card.js?v=1.0.0`. Configure only one of these resource URLs.
+Manual alternative: copy `hassenger-card.js` to `/config/www/hassenger-card.js` and use `/local/hassenger-card.js?v=1.0.1`. Configure only one of these resource URLs.
 
 ## 3. Add a persistent card
 
@@ -97,7 +97,7 @@ In the card visual editor:
 
 Assist/TTS destinations appear in the conversation picker. They are tools local to that card, not private participant conversations stored by the integration.
 
-The `+` button inside the message composer (above it in Classic control layout) opens a preset-aware emoji and media panel that stays within the visible card and viewport without covering the page. You can choose an emoji, upload an image/GIF, select Home Assistant Media, paste an image into the message box, or attach an image URL. Images may be sent alone or with text. File uploads are limited to 10 MiB each and are supported by the included card 1.0.0 and integration 1.0.0. Any authenticated participant may upload to a conversation; administrator rights are not required. Hassenger-managed uploads share a 100 MiB quota. Before accepting a new file, the integration removes the oldest unreferenced managed files as needed, never files still referenced by a message. If referenced files consume the available quota, the new upload is rejected.
+The `+` button inside the message composer (above it in Classic control layout) opens a preset-aware emoji and media panel that stays within the visible card and viewport without covering the page. You can choose an emoji, upload an image/GIF, select Home Assistant Media, paste an image into the message box, or attach an image URL. Images may be sent alone or with text. File uploads are limited to 10 MiB each and are supported by the included card 1.0.1 and integration 1.0.1. Any authenticated participant may upload to a conversation; administrator rights are not required. Hassenger-managed uploads share a 100 MiB quota. Before accepting a new file, the integration removes the oldest unreferenced managed files as needed, never files still referenced by a message. If referenced files consume the available quota, the new upload is rejected.
 
 To enable the optional friends-style panel, open **Conversations & Contacts → Contacts, presence & away messages** and turn on **Show Contacts / friends list**. Use **Automatic** placement for a side pane on wide cards and an overlay drawer on phones. The panel separates group Conversations, Home Assistant Contacts, and Assist/TTS Destinations. Selecting a contact opens the conversation immediately; the compact conversation selector stays at the upper-left of the transcript instead of being repeated in the footer. Each person can set an automatic home/away message from **My status**. For two clearly separated desktop windows, enable **Separate desktop windows** and set the desired spacing; each pane keeps the active preset border, radius, and effects. Narrow desktop cards cap a docked Contacts pane to preserve chat width, and Retro Messenger uses its bright classic-window Contacts surface.
 
@@ -161,21 +161,21 @@ Create one automation for each sender-to-phone route. For Person #2's phone rece
 
 ## Recovery checklist
 
-- **Old or resetting editor:** verify `?v=1.0.0`, then refresh/clear frontend cache once.
+- **Old or resetting editor:** verify `?v=1.0.1`, then refresh/clear frontend cache once.
 - **No new-conversation button:** the signed-in account must be an administrator.
 - **Accidental conversation:** select it and use the red footer trash control. This permanently deletes it and its messages.
-- **Weird copy window:** card 1.0.0 uses the clipboard and in-card emoji selector without opening a prompt; verify the loaded card version.
+- **Weird copy window:** card 1.0.1 uses the clipboard and in-card emoji selector without opening a prompt; verify the loaded card version.
 - **Speech-to-text says blocked or not allowed:** open Home Assistant over HTTPS, allow microphone permission for the site or Companion App in device settings, reload, and try again. If the app webview still does not expose speech recognition, use the phone keyboard microphone.
-- **No phone trace:** use a newly created automation from the mobile reply blueprint and confirm integration 1.0.0 loaded after a full restart. Enable the card Debug panel and verify its backend `last_event.kind` becomes `message_sent` after sending.
+- **No phone trace:** use a newly created automation from the mobile reply blueprint and confirm integration 1.0.1 loaded after a full restart. Enable the card Debug panel and verify its backend `last_event.kind` becomes `message_sent` after sending.
 - **Sender selection never matches:** open **Settings → People** and make sure the selected Person is linked to the same Home Assistant user that sends from the card. The Debug panel's last event must include the matching `sender_person_entity_id`.
 - **No notification but there is a trace:** enable **Show matching diagnostics**, send one message, and read the generated persistent notice. It reports the selected and incoming Person/user values without stopping as an unknown condition.
 - **Trace reaches notification but phone stays silent:** test the selected phone's notification in Developer Tools and verify Companion App notification permission; the mobile reply blueprint resolves the phone's registered notifier internally.
-- **TTS starts and cuts off:** confirm integration 1.0.0 is loaded and leave **Use media-player announcement mode** on.
+- **TTS starts and cuts off:** confirm integration 1.0.1 is loaded and leave **Use media-player announcement mode** on.
 - **Long gap inside TTS:** recreate the automation from the mobile reply blueprint and choose Natural pause. The spoken introduction and message use one fully buffered media item.
 - **Extra announcement ding:** leave announcement mode on and turn **Play the player's pre-announcement sound** off. This suppresses Music Assistant's optional sound without using the unreliable direct-playback route.
-- **Selected chime will not wait:** confirm integration 1.0.0 is loaded. The `hassenger.speak_message` service awaits the selected number of seconds internally between the chime playback call and TTS generation.
-- **Image upload returns 401:** replace the complete integration folder with 1.0.0, fully restart Home Assistant, load card 1.0.0, and sign in again. Hassenger provides authenticated conversation members with its own restricted upload route; Home Assistant's general upload route is administrator-only.
-- **Contacts cannot load:** confirm card 1.0.0 and integration 1.0.0 are loaded, restart Home Assistant after replacing the complete integration folder, and verify the signed-in Home Assistant account is active. A linked Person entity is optional, but is required for automatic home/away state.
+- **Selected chime will not wait:** confirm integration 1.0.1 is loaded. The `hassenger.speak_message` service awaits the selected number of seconds internally between the chime playback call and TTS generation.
+- **Image upload returns 401:** replace the complete integration folder with 1.0.1, fully restart Home Assistant, load card 1.0.1, and sign in again. Hassenger provides authenticated conversation members with its own restricted upload route; Home Assistant's general upload route is administrator-only.
+- **Contacts cannot load:** confirm card 1.0.1 and integration 1.0.1 are loaded, restart Home Assistant after replacing the complete integration folder, and verify the signed-in Home Assistant account is active. A linked Person entity is optional, but is required for automatic home/away state.
 - **Other image upload failure:** verify Home Assistant has a local Media directory and the selected file is a supported image no larger than 10 MiB. You can still attach a `/local/...` or `https://...` image URL. If the server reports that managed media storage is full, remove unneeded Home Assistant Media files or delete old message references; referenced files are preserved rather than evicted automatically.
 - **Phone works but TTS does not:** confirm both the `tts.*` engine and `media_player.*` entity are selected, then test that same pair with the `tts.speak` action in Developer Tools.
 - **`!input` error:** the blueprint was pasted into a normal automation editor. Store the file under `/config/blueprints/automation/` and create the automation from the Blueprints page.

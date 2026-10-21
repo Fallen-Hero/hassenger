@@ -23,3 +23,7 @@ Draft persistence is opt-in and stores unencrypted text in this browser, scoped 
 The Contacts endpoint is available only to authenticated Home Assistant users and returns active user IDs/display names plus an optional linked Person entity state and picture. It does not return credentials, email addresses, device trackers, or coordinates. Direct-chat creation validates the target against active Home Assistant users and atomically creates or reuses only an exact two-participant thread.
 
 Presence messages are visible to authenticated Hassenger users because they are intended as shared contact status. A user may update only their own presence record. Modes are allowlisted, messages are bounded to 160 characters, control characters are rejected, and the card HTML-escapes them before display. Do not place sensitive location details in a home or away message.
+
+## Private attachments in 1.0.1
+
+Hassenger uploads live in `config/hassenger`, outside shared Media and `www`. Download authorization uses persisted file ownership and current conversation membership, including for administrators. Existing managed uploads migrate at startup. General Media-picker references and externally hosted URLs keep their source permissions. Previous downloads and backup copies cannot be revoked by this update.

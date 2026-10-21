@@ -18,11 +18,11 @@ store = (root / "store.py").read_text(encoding="utf-8")
 audio = (root / "audio.py").read_text(encoding="utf-8")
 media_upload = (root / "media_upload.py").read_text(encoding="utf-8")
 
-assert manifest["version"] == "1.0.0"
+assert manifest["version"] == "1.0.1"
 assert "http" in manifest["dependencies"]
 assert list(manifest) == ["domain", "name", *sorted(set(manifest) - {"domain", "name"})]
 assert "CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)" in setup
-assert 'INTEGRATION_VERSION = "1.0.0"' in const
+assert 'INTEGRATION_VERSION = "1.0.1"' in const
 assert 'MAX_TIMESTAMP_LENGTH = 64' in const
 assert 'MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024' in const
 assert 'MAX_MEDIA_TOTAL_SIZE = 100 * 1024 * 1024' in const
@@ -70,8 +70,8 @@ assert store.count('raise PermissionError("Thread not found or access denied")')
 assert 'vol.Optional("attachment"): ATTACHMENT_SCHEMA' in websocket
 assert 'hass.services.async_register(DOMAIN, "speak_message"' in setup
 assert "hass.http.register_view(HassengerMediaUploadView(hass))" in setup
-assert '_safe_media_directory(media_dirs[source_id])' in media_upload
-assert '_referenced_media_names(store.data, source_id)' in media_upload
+assert '_private_directory, self.hass' in media_upload
+assert '_referenced_media_names(store.data)' in media_upload
 assert 'async with store._lock' in media_upload
 assert 'path.is_symlink()' in media_upload
 assert 'raise MediaStorageFullError' in media_upload
@@ -84,7 +84,7 @@ card = distribution_card.read_text(encoding="utf-8")
 assert 'const TAG = "hassenger-card"' in card
 assert 'const LEGACY_TAG = "ha-chat-card"' in card
 assert 'type: "custom:hassenger-card"' in card
-assert 'const VERSION = "1.0.0"' in card
+assert 'const VERSION = "1.0.1"' in card
 assert "await async_get_media_source_audio(hass, tts_media_source_id)" in audio
 assert "await asyncio.sleep(chime_wait_seconds)" in audio
 assert "ATTR_MEDIA_ANNOUNCE: announce" in audio

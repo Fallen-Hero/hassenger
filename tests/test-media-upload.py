@@ -177,9 +177,9 @@ source = source_path.read_text(encoding="utf-8")
 assert 'thread_id = str(data.get("thread_id", "")).strip()' in source
 assert "store.can_access(thread, user.id)" in source
 assert "uuid.uuid4().hex" in source
-assert "_safe_media_directory(media_dirs[source_id])" in source
+assert "_private_directory, self.hass" in source
 assert "MAX_MEDIA_TOTAL_SIZE" in source
-assert "_referenced_media_names(store.data, source_id)" in source
+assert "_referenced_media_names(store.data)" in source
 assert "async with store._lock" in source
 assert "path.is_symlink()" in source
 

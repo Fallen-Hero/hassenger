@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — 2026-10-20
+
+- Protect uploaded attachments with conversation-authorized downloads outside shared Media.
+- Migrate existing managed uploads and conversation pictures, with retry-safe persistence.
+- Remove the shared-media upload fallback and clear private media on account changes.
+- Resolve quiet-hours timezones asynchronously and reuse cached timezone objects.
+- Add tests against Home Assistant Core 2026.10.2 and gate new releases on validation.
+
 ## 1.0.0 — 2026-09-07
 
 - Add preset-aware contact profiles with full status messages, opt-in last-used information, direct chat, favorites, and accessible close/focus behavior.

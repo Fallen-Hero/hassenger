@@ -1,7 +1,7 @@
 {
   "name": "hassenger",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Release validation for the Hassenger Home Assistant integration and card",
   "engines": {
     "node": ">=20"

@@ -17,7 +17,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .audio import async_speak_message
 from .const import DATA_STORE, DEFAULT_RETENTION_DAYS, DOMAIN, INTEGRATION_VERSION, MAX_ATTACHMENT_NAME_LENGTH, MAX_ATTACHMENT_REFERENCE_LENGTH, MAX_MESSAGE_LENGTH, MAX_PARTICIPANTS, MAX_SENDER_NAME_LENGTH, MAX_THREAD_ID_LENGTH, MAX_THREAD_TITLE_LENGTH
-from .media_upload import HassengerMediaUploadView
+from .media_upload import HassengerMediaDownloadView, HassengerMediaUploadView, async_migrate_media
 from .store import HassengerStore
 from .websocket import async_register as async_register_websocket
 
@@ -37,12 +37,14 @@ async def _async_initialize(hass: HomeAssistant) -> bool:
         return True
     store = HassengerStore(hass)
     await store.async_load()
+    await async_migrate_media(hass, store)
     hass.data.setdefault(DOMAIN, {})[DATA_STORE] = store
     await hass.http.async_register_static_paths(
         [StaticPathConfig("/hassenger/hassenger-card.js", str(Path(__file__).parent / "frontend" / "hassenger-card.js"), False)]
     )
     async_register_websocket(hass)
     hass.http.register_view(HassengerMediaUploadView(hass))
+    hass.http.register_view(HassengerMediaDownloadView(hass))
 
     async def require_admin(call: ServiceCall) -> None:
         if call.context.user_id is None:

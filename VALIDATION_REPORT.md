@@ -1,3 +1,13 @@
+# Hassenger 1.0.1 validation
+
+Publication is gated by `.github/workflows/release.yml`: HACS, Hassfest, Python regression suites, browser suites, Chromium/Firefox/WebKit smoke tests, release archive integrity, and `tests/ha_compatibility.py` in the official Home Assistant Core 2026.10.2 container.
+
+The Home Assistant test uses actual HTTP bearer authentication, users, storage and integration initialization. It covers participant downloads, outsiders including administrators, access revocation, forged references, symlink rejection, legacy migration with a simulated save failure, restart persistence, invalid timezones and cached quiet-hour evaluation. Browser regressions cover authenticated downloads, permission errors, blob cleanup and pending requests across account lifecycle changes.
+
+The linked GitHub Actions run for the release commit is the authoritative result. These automated tests do not claim physical-device or Companion App testing. Minimum Home Assistant remains 2026.9.1; new compatibility coverage targets 2026.10.2.
+
+## Historical 1.0.0 validation record
+
 # Hassenger 1.0.0 release validation
 
 Documentation correction authorized by the owner on 2026-09-07: the README now uses a standard Markdown image with an absolute URL and a solid dark logo backdrop because HACS renders the theme-switching picture/source markup as text. This adds one README presentation image (87 files). HACS reads documentation from the selected release tag, so the correction replaces the v1.0.0 tag and ZIP after rerunning all automated gates. Integration, card, and blueprint code must remain byte-identical to original release commit `f542cb3f346fab205d9718429e610dd7c960a1ca`; the workflow rejects all changes outside an explicit documentation/test/workflow allowlist. The original 86-file ZIP checksum was `e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9`; its files are retained as a workflow backup. Download the new ZIP with its matching checksum.

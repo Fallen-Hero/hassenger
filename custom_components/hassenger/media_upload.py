@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 import re
+import shutil
 import uuid
 
 from aiohttp import web
@@ -36,6 +37,7 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp": ".webp",
 }
 MANAGED_MEDIA_NAME = re.compile(r"[0-9a-f]{32}\.(?:avif|bmp|gif|jpe?g|png|webp|pdf|mp3|wav)", re.IGNORECASE)
+PRIVATE_MEDIA_PREFIX = "/api/hassenger/media/file/"
 
 
 class UploadTooLargeError(Exception):
@@ -68,9 +70,9 @@ def _safe_media_directory(media_root: str | Path) -> Path:
     return resolved
 
 
-def _referenced_media_names(store_data: dict, source_id: str) -> set[str]:
+def _referenced_media_names(store_data: dict, source_id: str | None = None) -> set[str]:
     """Collect managed filenames still referenced by threads or messages."""
-    prefix = f"media-source://media_source/{source_id}/{MEDIA_SUBDIRECTORY}/"
+    prefix = PRIVATE_MEDIA_PREFIX if source_id is None else f"media-source://media_source/{source_id}/{MEDIA_SUBDIRECTORY}/"
     references: set[str] = set()
 
     def add(reference: object) -> None:
@@ -94,6 +96,114 @@ def _referenced_media_names(store_data: dict, source_id: str) -> set[str]:
             if isinstance(attachment, dict):
                 add(attachment.get("url"))
     return references
+
+
+def _private_directory(hass: HomeAssistant) -> Path:
+    """Keep private files outside every media root and the public www tree.
+
+    Called in the executor because resolving paths can touch the filesystem.
+    """
+    directory = _safe_media_directory(hass.config.path())
+    for public in [*hass.config.media_dirs.values(), hass.config.path("www")]:
+        root = Path(public).resolve()
+        if directory == root or root in directory.parents:
+            raise UnsafeMediaDirectoryError("Private Hassenger storage overlaps a public media directory")
+    return directory
+
+
+def _private_file(hass: HomeAssistant, filename: str) -> Path:
+    if not MANAGED_MEDIA_NAME.fullmatch(filename):
+        raise FileNotFoundError
+    directory = _private_directory(hass)
+    path = directory / filename
+    if path.is_symlink() or not path.is_file() or path.resolve().parent != directory:
+        raise FileNotFoundError
+    return path
+
+
+def _stage_legacy_media(hass: HomeAssistant) -> list[tuple[str, str, Path]]:
+    """Copy managed legacy uploads before committing rewritten references.
+
+    Deterministic destination names make retries safe after an interrupted save.
+    Unreferenced files are quarantined too, without granting anyone access.
+    """
+    target = _private_directory(hass)
+    target.mkdir(parents=True, exist_ok=True)
+    staged = []
+    for source_id, root in hass.config.media_dirs.items():
+        directory = _safe_media_directory(root)
+        for path, _size, _mtime in _managed_media_files(directory):
+            reference = f"media-source://media_source/{source_id}/{MEDIA_SUBDIRECTORY}/{path.name}"
+            filename = uuid.uuid5(uuid.NAMESPACE_URL, reference).hex + path.suffix.lower()
+            destination = target / filename
+            if destination.is_symlink():
+                raise UnsafeMediaDirectoryError("Legacy media destination is a symlink")
+            temporary = target / (filename + ".migrating")
+            if temporary.is_symlink():
+                raise UnsafeMediaDirectoryError("Legacy media staging path is a symlink")
+            shutil.copyfile(path, temporary)
+            temporary.replace(destination)
+            staged.append((reference, filename, path))
+    return staged
+
+
+def _remove_legacy_media(staged: list[tuple[str, str, Path]]) -> None:
+    for _reference, _filename, path in staged:
+        path.unlink(missing_ok=True)
+
+
+async def async_migrate_media(hass: HomeAssistant, store) -> None:
+    """Secure old files and preserve conversation pictures and attachments."""
+    staged = await hass.async_add_executor_job(_stage_legacy_media, hass)
+    if not staged:
+        return
+    async with store._lock:  # noqa: SLF001
+        for reference, filename, _path in staged:
+            owners = set(store.data.setdefault("media", {}).get(filename, []))
+            for thread_id, thread in store.data["threads"].items():
+                if thread.get("image") == reference:
+                    thread["image"] = PRIVATE_MEDIA_PREFIX + filename
+                    owners.add(thread_id)
+                for message in store.data["messages"].get(thread_id, []):
+                    attachment = message.get("attachment")
+                    if isinstance(attachment, dict) and attachment.get("url") == reference:
+                        attachment["url"] = PRIVATE_MEDIA_PREFIX + filename
+                        owners.add(thread_id)
+            store.data["media"][filename] = sorted(owners)
+        await store._store.async_save(store.data)  # noqa: SLF001
+    # Never remove originals until the private references are durably saved.
+    await hass.async_add_executor_job(_remove_legacy_media, staged)
+
+
+class HassengerMediaDownloadView(http.HomeAssistantView):
+    """Authorize every download against the file's persisted conversation owners."""
+
+    url = PRIVATE_MEDIA_PREFIX + "{filename}"
+    name = "api:hassenger:media:download"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def get(self, request: web.Request, filename: str) -> web.StreamResponse:
+        user = request.get("hass_user")
+        store = self.hass.data[DOMAIN][DATA_STORE]
+        owners = store.data.get("media", {}).get(filename, [])
+        if user is None or not isinstance(owners, list) or not any(
+            store.can_access(store.data["threads"].get(thread_id, {}), user.id)
+            for thread_id in owners if isinstance(thread_id, str)
+        ):
+            raise web.HTTPForbidden(text="Attachment not found or access denied")
+        try:
+            path = await self.hass.async_add_executor_job(_private_file, self.hass, filename)
+        except (OSError, UnsafeMediaDirectoryError) as err:
+            raise web.HTTPNotFound from err
+        return web.FileResponse(path, headers={
+            "Cache-Control": "no-store, private",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Type": next((kind for kind, suffix in ALLOWED_IMAGE_TYPES.items() if filename.lower().endswith(suffix)), "application/octet-stream"),
+            "Content-Disposition": "attachment",
+        })
 
 
 def _managed_media_files(directory: Path) -> list[tuple[Path, int, int]]:
@@ -211,7 +321,7 @@ class HassengerMediaUploadView(http.HomeAssistantView):
         self._upload_lock = asyncio.Lock()
 
     async def post(self, request: web.Request) -> web.Response:
-        """Validate and store an image below Home Assistant's media directory."""
+        """Validate and store an attachment in private Hassenger storage."""
         request._client_max_size = REQUEST_SIZE_LIMIT  # noqa: SLF001
         try:
             data = await request.post()
@@ -237,13 +347,9 @@ class HassengerMediaUploadView(http.HomeAssistantView):
         if user is None or thread is None or not store.can_access(thread, user.id):
             raise web.HTTPForbidden(text="Conversation not found or access denied")
 
-        media_dirs = dict(self.hass.config.media_dirs or {})
-        if not media_dirs:
-            raise web.HTTPServiceUnavailable(text="Home Assistant has no local media directory configured")
-        source_id = "local" if "local" in media_dirs else next(iter(media_dirs))
         filename = f"{uuid.uuid4().hex}{extension}"
         try:
-            media_directory = _safe_media_directory(media_dirs[source_id])
+            media_directory = await self.hass.async_add_executor_job(_private_directory, self.hass)
         except (OSError, UnsafeMediaDirectoryError) as err:
             raise web.HTTPInternalServerError(text="Hassenger's media directory is not safely contained") from err
         target = media_directory / filename
@@ -255,13 +361,22 @@ class HassengerMediaUploadView(http.HomeAssistantView):
                 # cleanup so a message cannot begin referencing a candidate file
                 # between those operations.
                 async with store._lock:  # noqa: SLF001
-                    referenced_names = _referenced_media_names(store.data, source_id)
-                    await self.hass.async_add_executor_job(
+                    # Membership can change while the upload is being written.
+                    thread = store.data["threads"].get(thread_id, {})
+                    if not store.can_access(thread, user.id):
+                        await self.hass.async_add_executor_job(target.unlink)
+                        raise web.HTTPForbidden(text="Conversation not found or access denied")
+                    referenced_names = _referenced_media_names(store.data)
+                    removed = await self.hass.async_add_executor_job(
                         _enforce_media_storage,
                         media_directory,
                         referenced_names,
                         filename,
                     )
+                    for removed_name in removed:
+                        store.data.setdefault("media", {}).pop(removed_name, None)
+                    store.data.setdefault("media", {})[filename] = [thread_id]
+                    await store._store.async_save(store.data)  # noqa: SLF001
         except UploadTooLargeError as err:
             raise web.HTTPRequestEntityTooLarge(max_size=MAX_UPLOAD_SIZE, actual_size=MAX_UPLOAD_SIZE + 1) from err
         except ValueError as err:
@@ -275,7 +390,7 @@ class HassengerMediaUploadView(http.HomeAssistantView):
 
         return self.json(
             {
-                "media_content_id": f"media-source://media_source/{source_id}/hassenger/{filename}",
+                "media_content_id": PRIVATE_MEDIA_PREFIX + filename,
                 "name": str(uploaded.filename or "Shared image")[:255],
                 "content_type": content_type,
             }

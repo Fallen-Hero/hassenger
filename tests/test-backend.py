@@ -73,6 +73,19 @@ storage = types.ModuleType("homeassistant.helpers.storage")
 storage.Store = FakeStorage
 sys.modules.update({"homeassistant": homeassistant, "homeassistant.core": core, "homeassistant.helpers": helpers, "homeassistant.helpers.storage": storage})
 
+# Unit-test adapter; real Home Assistant timezone resolution is covered separately.
+util = types.ModuleType("homeassistant.util")
+dt_util = types.ModuleType("homeassistant.util.dt")
+async def async_get_time_zone(name):
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    try:
+        return await asyncio.to_thread(ZoneInfo, name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return None
+dt_util.async_get_time_zone = async_get_time_zone
+util.dt = dt_util
+sys.modules.update({"homeassistant.util": util, "homeassistant.util.dt": dt_util})
+
 package = types.ModuleType("hassenger")
 package.__path__ = []
 sys.modules["hassenger"] = package

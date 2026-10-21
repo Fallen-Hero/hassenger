@@ -10,6 +10,7 @@ import zlib
 
 root = pathlib.Path(__file__).resolve().parent.parent
 root_files = {
+    "RELEASE_NOTES_1.0.1.md",
     "UPGRADING.md",
     "FEATURE_GUIDE.md",
     "IMPROVEMENT_PLAN.md",
@@ -46,6 +47,8 @@ documentation_images = {
     "docs/screenshots/mobile-rgb.png", "docs/screenshots/mobile-retro-contacts.png",
 }
 test_files = {
+    "test-private-media-browser.js",
+    "ha_compatibility.py",
     "test-contact-profile-browser.js",
     "test-menu-bounds-browser.js",
     "test-input-focus-browser.js",

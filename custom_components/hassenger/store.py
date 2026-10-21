@@ -5,12 +5,12 @@ from __future__ import annotations
 import asyncio
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import re
 import uuid
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DEFAULT_RETENTION_DAYS,
@@ -47,6 +47,7 @@ class HassengerStore:
         self.data: dict = {"threads": {}, "messages": {}, "reads": {}, "presence": {}, "scheduled": {}, "bookmarks": {}, "favorites": {}, "reminders": {}, "version": 1}
         self.last_event: dict | None = None
         self._scheduled_in_flight: set[str] = set()
+        self._quiet_timezones = {"UTC": UTC}
 
     async def async_load(self) -> None:
         """Load stored data, discarding malformed containers safely."""
@@ -62,6 +63,7 @@ class HassengerStore:
             "messages": {key: [item for item in value if isinstance(item, dict)] for key, value in messages.items() if isinstance(key, str) and isinstance(value, list)},
             "reads": {key: value for key, value in reads.items() if isinstance(key, str) and isinstance(value, dict)},
             "presence": {},
+            "media": loaded.get("media", {}) if isinstance(loaded.get("media"), dict) else {},
             "scheduled": {},
             "reminders": {},
             "favorites": {user: self.normalize_identifier_list(items)[:500] for user, items in loaded.get("favorites", {}).items() if isinstance(user, str)} if isinstance(loaded.get("favorites"), dict) else {},
@@ -91,7 +93,9 @@ class HassengerStore:
             if not isinstance(user_id, str) or not isinstance(value, dict):
                 continue
             try:
-                self.data["presence"][user_id] = self.normalize_presence(value)
+                clean = self.normalize_presence(value)
+                await self._async_resolve_timezone(clean["quiet_timezone"])
+                self.data["presence"][user_id] = clean
             except ValueError:
                 continue
         for thread_id, thread in list(self.data["threads"].items()):
@@ -302,11 +306,6 @@ class HassengerStore:
             if clock_value and not re.fullmatch(r"(?:[01][0-9]|2[0-3]):[0-5][0-9]", clock_value):
                 raise ValueError("Quiet hours must use HH:MM")
         quiet_timezone = str(raw.get("quiet_timezone", "UTC"))[:128]
-        try:
-            if quiet_timezone != "UTC":
-                ZoneInfo(quiet_timezone)
-        except (ZoneInfoNotFoundError, ValueError) as err:
-            raise ValueError("Choose a supported timezone for quiet hours") from err
         clean = {
             "mode": mode,
             "home_message": cls._limited(raw.get("home_message"), MAX_PRESENCE_MESSAGE_LENGTH, "Home status message"),
@@ -326,6 +325,15 @@ class HassengerStore:
         }
         return clean
 
+    async def _async_resolve_timezone(self, name: str) -> None:
+        """Resolve disk-backed timezone data off the event loop."""
+        if name in self._quiet_timezones:
+            return
+        zone = await dt_util.async_get_time_zone(name)
+        if zone is None:
+            raise ValueError("Choose a supported timezone for quiet hours")
+        self._quiet_timezones[name] = zone
+
     def list_presence(self) -> dict[str, dict]:
         """Return shared presence preferences without exposing other stored data."""
         result = deepcopy(self.data.get("presence", {}))
@@ -341,6 +349,7 @@ class HassengerStore:
         async with self._lock:
             previous = self.list_presence().get(user_id, {})
             clean = self.normalize_presence({**previous, **value})
+            await self._async_resolve_timezone(clean["quiet_timezone"])
             if "duration_minutes" in value:
                 minutes = value["duration_minutes"]
                 if not isinstance(minutes, int) or isinstance(minutes, bool) or not 0 <= minutes <= 1440:
@@ -361,10 +370,10 @@ class HassengerStore:
             if not start or not end or start == end:
                 continue
             timezone = preferences.get("quiet_timezone", "UTC")
-            try:
-                clock = datetime.now(UTC if timezone == "UTC" else ZoneInfo(timezone)).strftime("%H:%M")
-            except (ZoneInfoNotFoundError, ValueError):
+            zone = self._quiet_timezones.get(timezone)
+            if zone is None:
                 continue
+            clock = datetime.now(zone).strftime("%H:%M")
             if (start <= clock < end) if start < end else (clock >= start or clock < end):
                 muted.add(user_id)
         return sorted(muted)

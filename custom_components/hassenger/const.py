@@ -1,7 +1,7 @@
 """Constants for Hassenger."""
 
 DOMAIN = "hassenger"
-INTEGRATION_VERSION = "1.0.0"
+INTEGRATION_VERSION = "1.0.1"
 STORAGE_KEY = "hassenger.messages"
 STORAGE_VERSION = 1
 EVENT_UPDATED = "hassenger_updated"

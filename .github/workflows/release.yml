@@ -1,18 +1,34 @@
-name: Correct Hassenger 1.0.0 README
+name: Validate and release Hassenger
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hassenger-first-release
+  group: hassenger-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  home-assistant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test real Home Assistant 2026.10.2
+        run: >-
+          docker run --rm --entrypoint python
+          -e PYTHONDONTWRITEBYTECODE=1
+          -v "$GITHUB_WORKSPACE:/work:ro" -w /work
+          ghcr.io/home-assistant/home-assistant:2026.10.2
+          tests/ha_compatibility.py
+
   validate:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -22,17 +38,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
-      - name: Verify documentation-only correction
-        run: |
-          original=f542cb3f346fab205d9718429e610dd7c960a1ca
-          test "$(git rev-parse 'v1.0.0^{commit}')" = "$original"
-          changed=$(git diff --name-only "$original" HEAD)
-          printf '%s\n' "$changed"
-          if printf '%s\n' "$changed" | grep -Ev '^(README.md|VALIDATION_REPORT.md|branding/README.md|branding/hassenger-full-logo-banner.png|tests/test-release-layout.py|\.github/workflows/release.yml)$'; then
-            echo "Unexpected non-documentation change; refusing replacement."
-            exit 1
-          fi
       - name: Export exact source commit
         run: |
           mkdir -p "$RUNNER_TEMP/hassenger-release"
@@ -44,99 +49,43 @@ jobs:
         with:
           node-version: "20"
       - run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
-      - run: npm install --ignore-scripts
+      - run: npm install --ignore-scripts --package-lock=false
       - run: npx playwright install --with-deps chromium firefox webkit
       - uses: home-assistant/actions/hassfest@master
       - uses: hacs/action@main
         with:
           category: integration
-      - name: Test and build immutable archive
+      - name: Test and build release archive
         working-directory: ${{ runner.temp }}/hassenger-release
-        run: python -B scripts/build-release.py --engines chromium,firefox,webkit --output "$RUNNER_TEMP/release-assets/Hassenger-v1.0.0.zip"
+        run: python -B scripts/build-release.py --engines chromium,firefox,webkit --output "$RUNNER_TEMP/release-assets/Hassenger-v1.0.1.zip"
       - uses: actions/upload-artifact@v4
         with:
-          name: hassenger-1.0.0-release-assets
-          path: |
-            ${{ runner.temp }}/release-assets/Hassenger-v1.0.0.zip
-            ${{ runner.temp }}/release-assets/Hassenger-v1.0.0.zip.sha256
+          name: hassenger-1.0.1-release-assets
+          path: ${{ runner.temp }}/release-assets/*
           if-no-files-found: error
           retention-days: 30
 
   publish:
-    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [validate, home-assistant]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: hassenger-1.0.0-release-assets
+          name: hassenger-1.0.1-release-assets
           path: release-assets
-      - name: Verify archive checksum
-        working-directory: release-assets
-        run: sha256sum --check Hassenger-v1.0.0.zip.sha256
-      - name: Preserve original release assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = f542cb3f346fab205d9718429e610dd7c960a1ca
-          test "$(gh api repos/{owner}/{repo}/releases/tags/v1.0.0 --jq .immutable)" != true
-          gh release download v1.0.0 --dir original-release --pattern 'Hassenger-v1.0.0.zip*'
-          (cd original-release && sha256sum --check Hassenger-v1.0.0.zip.sha256)
-          test "$(sha256sum original-release/Hassenger-v1.0.0.zip | cut -d ' ' -f 1)" = e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9
-      - uses: actions/upload-artifact@v4
-        with:
-          name: original-1.0.0-before-readme-correction
-          path: original-release/*
-          if-no-files-found: error
-          retention-days: 90
-      - name: Replace authorized documentation release and verify
+      - name: Publish verified v1.0.1 without replacing existing releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           RELEASE_SHA: ${{ github.sha }}
-          RELEASE_NOTES: |
-            ## Hassenger 1.0.0
-            The first public release: messaging for your Home Assistant household.
-
-            **Documentation correction (2026-09-07):** the 1.0.0 tag and full ZIP were replaced with the owner's approval to fix the README logo in HACS. Integration, card, and blueprint code are unchanged. The full ZIP checksum changed; download the matching SHA-256 file below. The previous ZIP checksum was e335f423586b7641960691b1961ce107cde8334384d09c030fcefec8848238d9.
-
-            ### Included
-            - Private one-to-one and group conversations, Contacts and preset-matched profiles.
-            - Status messages, typing indicators, read receipts, reactions and conversation search.
-            - Images, GIFs, PDFs and audio attachments; Quick messages and private reminders.
-            - Assist/TTS destinations, optional actionable phone notifications and configurable branding.
-
-            ### Compatibility and testing
-            Requires Home Assistant Core **2026.9.1 or newer**. The maintainer confirmed restart, two-account messaging, uploads and mobile use on **2026.9.1**.
-            The exact release commit passed seven Python suites, 22 Chromium browser suites, Chromium/Firefox/WebKit smoke tests, HACS, Hassfest and archive checks.
-            Older Home Assistant versions and every phone/speaker, backup/restore and accessibility combination are not certified. Speech-to-text depends on browser support, HTTPS and microphone permission.
-
-            ### Install
-            1. Add **Fallen-Hero/hassenger** as a HACS custom repository, category **Integration**.
-            2. Download Hassenger and restart Home Assistant.
-            3. Add the Hassenger integration under Settings > Devices & services.
-            4. Add /hassenger/hassenger-card.js?v=1.0.0 as a JavaScript-module dashboard resource.
-            5. Add a card with type: custom:hassenger-card and data_source: hassenger.
-
-            For manual installation, extract the full ZIP and copy custom_components/hassenger into config/custom_components. Do not copy the entire source ZIP into that integration folder.
-            See README.md and FIRST_TIME_SETUP.md for full instructions and optional blueprints.
-
-            ### Downloads
-            Hassenger-v1.0.0.zip contains the complete source, integration, bundled card, blueprints, documentation and branding.
-            Hassenger-v1.0.0.zip.sha256 verifies that exact ZIP.
-
-            [Support Hassenger on Buy Me a Coffee](https://buymeacoffee.com/fallenhero)
-        working-directory: release-assets
         run: |
-          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = f542cb3f346fab205d9718429e610dd7c960a1ca
-          gh release upload v1.0.0 Hassenger-v1.0.0.zip Hassenger-v1.0.0.zip.sha256 --clobber
-          mkdir downloaded
-          gh release download v1.0.0 --dir downloaded --pattern 'Hassenger-v1.0.0.zip*'
-          cmp Hassenger-v1.0.0.zip.sha256 downloaded/Hassenger-v1.0.0.zip.sha256
-          (cd downloaded && sha256sum --check Hassenger-v1.0.0.zip.sha256)
-          gh api --method PATCH repos/{owner}/{repo}/git/refs/tags/v1.0.0 -f sha="$RELEASE_SHA" -F force=true
-          test "$(gh api repos/{owner}/{repo}/git/ref/tags/v1.0.0 --jq .object.sha)" = "$RELEASE_SHA"
-          gh release edit v1.0.0 --notes "$RELEASE_NOTES" --latest
+          test "$(python -c 'import json; print(json.load(open("custom_components/hassenger/manifest.json"))["version"])')" = 1.0.1
+          (cd release-assets && sha256sum --check Hassenger-v1.0.1.zip.sha256)
+          gh release create v1.0.1 --target "$RELEASE_SHA" --title 'Hassenger 1.0.1' --notes-file RELEASE_NOTES_1.0.1.md --latest release-assets/Hassenger-v1.0.1.zip release-assets/Hassenger-v1.0.1.zip.sha256
