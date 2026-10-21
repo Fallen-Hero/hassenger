@@ -17,6 +17,7 @@ from aiohttp import FormData
 from aiohttp.test_utils import TestClient, TestServer
 from homeassistant.core import HomeAssistant
 from homeassistant import auth, loader
+from homeassistant.helpers import device_registry, frame
 from homeassistant.const import __version__
 from homeassistant.components.http.server import HomeAssistantHTTP
 
@@ -35,6 +36,8 @@ async def main():
         root = Path(temporary)
         hass = HomeAssistant(str(root))
         loader.async_setup(hass)
+        frame.async_setup(hass)
+        device_registry.async_setup(hass)
         hass.config.media_dirs = {"local": str(root / "media")}
         hass.auth = await auth.auth_manager_from_config(hass, [], [])
         owner = await hass.auth.async_create_user("Owner", group_ids=["system-admin"])

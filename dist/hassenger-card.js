@@ -861,6 +861,7 @@
     async _uploadAttachment(file,index){
       if(!file||(!String(file.type||"").startsWith("image/")&&!["application/pdf","audio/mpeg","audio/wav","audio/x-wav","audio/wave"].includes(file.type)))return this._toast("Choose an image, GIF, PDF, MP3 or WAV file.");
       if(file.size>10*1024*1024)return this._toast("Attachments are limited to 10 MB.");
+      if(!versionAtLeast(this._backendDiagnostics?.integration_version,"1.0.1"))return this._toast("Update and restart the Hassenger integration to version 1.0.1 before uploading private attachments.");
       const people=this._availablePeople(),p=people[index]||people[0];if(!p)return;
       const key=this._personKey(p,index);if(this._uploadingAttachment[key])return;
       const controller=new AbortController();this._uploadControllers[key]=controller;this._uploadingAttachment[key]={name:String(file.name||"image").slice(0,80),size:Number(file.size)||0};this.shadowRoot.querySelector(".attachment-menu")?.removeAttribute("open");this._render();

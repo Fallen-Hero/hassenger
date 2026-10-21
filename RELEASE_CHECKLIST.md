@@ -1,5 +1,11 @@
 # Release checklist
 
+## 1.0.1 patch release
+
+The owner authorized implementing the review fixes, testing against the latest Home Assistant, releasing 1.0.1 and returning the existing HACS PR to review. The release workflow gates publication on real Home Assistant 2026.10.2 compatibility tests, HACS/Hassfest, regression/browser tests and archive checks. See [validation coverage](VALIDATION_REPORT.md) and the release commit's Actions results. Physical-device and Companion App testing remain outside this automated validation.
+
+## Historical first-release checklist
+
 First public release: v1.0.0. Checked items are backed by recorded evidence; unchecked items remain explicit follow-up work, not claims of successful testing. Publication requires the automated release workflow to pass and the maintainer's live smoke-test confirmation.
 
 ## Confirmed live smoke testing
